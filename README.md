@@ -1,17 +1,17 @@
-# vite-plugin-umd-proxy
+# vite-plugin-var-proxy
 
-You can use this library to perform a simple UMD module conversion.
+You can use this library to perform a simple window module conversion.
 
 ## Usage
 
 ```typescript
 import { defineConfig } from "vite";
-import umdProxy from "vite-plugin-umd-proxy";
+import varProxy from "vite-plugin-var-proxy";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    umdProxy({
+    varProxy({
       name: "React",
     }),
   ],

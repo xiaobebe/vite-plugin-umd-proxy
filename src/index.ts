@@ -1,13 +1,13 @@
 import { cleanUrl, getTsOrTsx } from "./utils";
 import { send, ViteDevServer } from "vite";
 
-const viteUMDProxy = ({ name, proxy = "proxy" }) => {
+const viteVarProxy = ({ name, proxy = "proxy" }) => {
   let originServerHost: string;
   let server: ViteDevServer;
   const proxyRe = new RegExp(`^/${proxy}/`);
   const hmrProxy = `hmr-${proxy}`;
   return {
-    name: "vite:umd-proxy",
+    name: "vite:var-proxy",
     configureServer: function (_server) {
       server = _server;
       const { middlewares } = server;
@@ -79,10 +79,10 @@ const viteUMDProxy = ({ name, proxy = "proxy" }) => {
       const file = cleanUrl(id);
 
       const code = `
-    import * as umdProxyModule from '${file}';
+    import * as varProxyModule from '${file}';
     
     let update;
-    window["${name}"] = Object.create(umdProxyModule, {
+    window["${name}"] = Object.create(varProxyModule, {
       onModuleUpdate:{
         value:function(cb) {
            update = cb;
@@ -99,4 +99,4 @@ const viteUMDProxy = ({ name, proxy = "proxy" }) => {
   };
 };
 
-export default viteUMDProxy;
+export default viteVarProxy;
