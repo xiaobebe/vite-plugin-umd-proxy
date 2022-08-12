@@ -1,7 +1,7 @@
 import { cleanUrl, getTsOrTsx } from "./utils";
 import { send, ViteDevServer } from "vite";
 
-const viteVarProxy = ({ name, proxy = "proxy" }) => {
+const viteVarProxy = ({ name, proxy = "dist" }) => {
   let originServerHost: string;
   let server: ViteDevServer;
   const proxyRe = new RegExp(`^/${proxy}/`);
