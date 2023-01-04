@@ -14,7 +14,8 @@ const viteVarProxy = ({ name, proxy = "dist" }) => {
 
       const options = server.config.server || {};
 
-      let hostname = options.host || "localhost";
+      let hostname =
+        typeof options.host === "string" ? options.host : "localhost";
       if (hostname === "0.0.0.0") hostname = "localhost";
       const protocol = options.https ? "https" : "http";
 
