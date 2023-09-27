@@ -56,8 +56,23 @@ const viteVarProxy = ({ name, proxy = "dist" }) => {
     window[moduleVarName] = [];
 
     scriptDom.innerHTML = \`
-      import '${originServerHost}${modulePath}?${hmrProxy}';
-      window[moduleVarName][0]();
+    import * as RefreshRuntime from "${originServerHost}/@react-refresh";
+    if (!window.$RefreshReg$) {
+      try {
+        const injectIntoGlobalHook =
+          RefreshRuntime?.injectIntoGlobalHook ??
+          RefreshRuntime?.default?.injectIntoGlobalHook;
+
+        injectIntoGlobalHook(window);
+      } catch (e) {}
+      window.$RefreshReg$ = () => {};
+      window.$RefreshSig$ = () => (type) => type;
+      window.__vite_plugin_react_preamble_installed__ = true;
+    }
+
+      import('${originServerHost}${modulePath}?${hmrProxy}').then(()=>{
+        window[moduleVarName][0]();
+      });
     \`;
     document.body.append(scriptDom);
     window["${name}"] = new Promise((resolve,reject)=> {
