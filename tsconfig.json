@@ -16,7 +16,6 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "strictNullChecks": true,
-    "suppressImplicitAnyIndexErrors": true,
     "noUnusedLocals": true,
     "traceResolution": true,
     "typeRoots": ["./@types", "./node_modules/@types"],
