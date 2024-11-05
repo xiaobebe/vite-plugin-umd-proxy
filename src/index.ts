@@ -65,6 +65,7 @@ const viteVarProxy = ({ name, proxy = "dist", forceHmr = false }) => {
     const moduleVarName = \`$vite_module_\${new Date().valueOf()}\`;
     window[moduleVarName] = [];
 
+    window.$RefreshReg$ = undefined;
     scriptDom.innerHTML = \`
     import * as RefreshRuntime from "${originServerHost}/@react-refresh";
     if (!window.$RefreshReg$) {
