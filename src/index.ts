@@ -1,64 +1,65 @@
 import { loadConfig } from "@unocss/config";
+import { type ViteDevServer, send } from "vite";
+import cdnExternals from "./react";
 import { cleanUrl, getTsOrTsx } from "./utils";
-import { send, type ViteDevServer } from "vite";
-import cdnExternals from "vite-plugin-cdn-externals";
 
 async function hasUno() {
-  const config = await loadConfig();
+	const config = await loadConfig();
 
-  return config.sources?.length ? config : undefined;
+	return config.sources?.length ? config : undefined;
 }
 
-const viteVarProxy = ({ name, proxy = "dist", externalReact = false }) => {
-  let originServerHost: string;
-  let server: ViteDevServer;
-  const proxyRe = new RegExp(`^/${proxy}/`);
-  const hmrProxy = `hmr-${proxy}`;
+const viteVarProxy = ({ name, proxy = "dist", forceHmr = false }) => {
+	let originServerHost: string;
+	let server: ViteDevServer;
+	const proxyRe = new RegExp(`^/${proxy}/`);
+	const hmrProxy = `hmr-${proxy}`;
 
-  return [
-    {
-      name: "vite:var-proxy",
-      configureServer(_server) {
-        server = _server;
-        const { middlewares } = server;
+	return [
+		{
+			name: "vite:var-proxy",
+			apply: "serve",
+			configureServer(_server) {
+				server = _server;
+				const { middlewares } = server;
 
-        const options = server.config.server || {};
+				const options = server.config.server || {};
 
-        let hostname =
-          typeof options.host === "string" ? options.host : "localhost";
-        if (hostname === "0.0.0.0") hostname = "localhost";
-        const protocol = options.https ? "https" : "http";
+				let hostname =
+					typeof options.host === "string" ? options.host : "localhost";
+				if (hostname === "0.0.0.0") hostname = "localhost";
+				const protocol = options.https ? "https" : "http";
 
-        middlewares.use(async (req, res, next) => {
-          if (
-            req.method !== "GET"
-            // || req.headers.accept?.includes("text/html")
-          ) {
-            return next();
-          }
+				middlewares.use(async (req, res, next) => {
+					if (
+						req.method !== "GET"
+						// || req.headers.accept?.includes("text/html")
+					) {
+						return next();
+					}
 
-          const url = cleanUrl(req.url);
-          if (!proxyRe.test(url)) {
-            return next();
-          }
+					const url = cleanUrl(req.url);
+					if (!proxyRe.test(url)) {
+						return next();
+					}
 
-          res.setHeader("access-control-allow-origin", "*");
-          const port = _server.httpServer.address().port;
-          originServerHost = `${protocol}://${hostname}:${port}`;
+					res.setHeader("access-control-allow-origin", "*");
+					const port = _server.httpServer.address().port;
+					originServerHost = `${protocol}://${hostname}:${port}`;
 
-          if (/\.css$/.test(url)) {
-            return send(req, res, "body{}", "css", {});
-          }
+					if (/\.css$/.test(url)) {
+						return send(req, res, "body{}", "css", {});
+					}
 
-          const modulePath = getTsOrTsx(
-            url.replace(proxyRe, "./src/")
-          )?.replace(".", "");
+					const modulePath = getTsOrTsx(
+						url.replace(proxyRe, "./src/"),
+					)?.replace(".", "");
 
-          if (!modulePath) {
-            return next();
-          }
+					if (!modulePath) {
+						return next();
+					}
 
-          const code = `
+					const code = `
     const scriptDom = document.createElement('script');
     scriptDom.setAttribute('type', 'module');
     const moduleVarName = \`$vite_module_\${new Date().valueOf()}\`;
@@ -89,24 +90,24 @@ const viteVarProxy = ({ name, proxy = "dist", externalReact = false }) => {
     });
 `;
 
-          return send(req, res, code, "js", {});
-        });
-      },
-      resolveId(id) {
-        if (new RegExp(`\\?${hmrProxy}`).test(id)) {
-          return id;
-        }
-      },
-      async load(id) {
-        if (!new RegExp(`\\?${hmrProxy}`).test(id)) {
-          return;
-        }
+					return send(req, res, code, "js", {});
+				});
+			},
+			resolveId(id) {
+				if (new RegExp(`\\?${hmrProxy}`).test(id)) {
+					return id;
+				}
+			},
+			async load(id) {
+				if (!new RegExp(`\\?${hmrProxy}`).test(id)) {
+					return;
+				}
 
-        const hasUnocss = await hasUno();
+				const hasUnocss = await hasUno();
 
-        const file = cleanUrl(id);
+				const file = cleanUrl(id);
 
-        const code = `
+				const code = `
     import * as varProxyModule from '${file}';
 
     ${hasUnocss ? "import 'uno.css';" : ""}
@@ -121,29 +122,14 @@ const viteVarProxy = ({ name, proxy = "dist", externalReact = false }) => {
     });
     
     import.meta.hot.accept(() => {
-      update?.(window["${name}"]);
+      ${forceHmr ? "update?.(window['${name}']);" : `console.log('Module ${name} updated');`}
     });
 `;
-        return code;
-      },
-    },
-    externalReact &&
-      Object.assign(
-        cdnExternals({
-          react: {
-            windowName: "React",
-            find: /^react$/,
-          },
-          "react-dom": {
-            windowName: "ReactDOM",
-            find: /^react-dom$/,
-          },
-        }),
-        {
-          apply: "serve",
-        }
-      ),
-  ];
+				return code;
+			},
+		},
+		cdnExternals(),
+	];
 };
 
 export default viteVarProxy;
