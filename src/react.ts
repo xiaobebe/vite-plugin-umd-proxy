@@ -4,7 +4,7 @@ import mkdirp from "mkdirp-sync";
 import { resolvePath } from "mlly";
 import * as path from "path";
 import { getExportsRuntime } from "pkg-exports";
-import type { Plugin } from "vite";
+import { mergeConfig, type Plugin } from "vite";
 
 async function getExternalCode(npmName: string, windowName: string) {
 	try {
@@ -67,9 +67,9 @@ const cdnExternals = (
 
 	return {
 		name: "vite:cdn-externals",
-		enforce: "pre",
+		enforce: "post",
 		apply: "serve",
-		async config() {
+		async config(config) {
 			const alias = (
 				await Promise.all(
 					Object.entries(externals).map(async ([npmName, option]) => {
@@ -104,7 +104,7 @@ const cdnExternals = (
 				.filter(Boolean)
 				.flat();
 
-			return {
+			const result = mergeConfig(config, {
 				resolve: {
 					alias,
 				},
@@ -125,7 +125,8 @@ const cdnExternals = (
 						],
 					},
 				},
-			};
+			});
+			return result;
 		},
 	} as Plugin;
 };

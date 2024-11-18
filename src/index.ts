@@ -44,7 +44,7 @@ const viteVarProxy = ({ name, proxy = "dist", forceHmr = false }) => {
 					}
 
 					res.setHeader("access-control-allow-origin", "*");
-					const port = _server.httpServer.address().port;
+					const port = _server.httpServer?.address().port || process.env.SERVER_PORT || 3000;
 					originServerHost = `${protocol}://${hostname}:${port}`;
 
 					if (/\.css$/.test(url)) {
